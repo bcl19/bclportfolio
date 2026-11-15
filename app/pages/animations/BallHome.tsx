@@ -1,40 +1,57 @@
+
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
 import * as THREE from "three";
 
 interface SphereProps {
   color: string;
 }
 
-function Sphere({ color }: SphereProps) {
+const Sphere = ({ color = "#3399ff" }: SphereProps) => {
   const sphereRef = useRef<THREE.Mesh>(null);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const sphere = sphereRef.current;
 
     if (!sphere) return;
 
     const { x, y } = state.pointer;
 
-    // Rotação horizontal
-    const targetRotationY = x * 0.6;
+    const elapsedTime = state.clock.elapsedTime;
 
-    // Rotação vertical
+    // Rotação baseada no mouse
+    const targetRotationY = x * 0.6;
     const targetRotationX = -y * 0.6;
 
-    // Suavização
+    // Suavização independente do FPS
+    const smoothness = 5;
+    const lerpFactor = 1 - Math.exp(-smoothness * delta);
+
     sphere.rotation.y +=
-      (targetRotationY - sphere.rotation.y) * 0.05;
+      (targetRotationY - sphere.rotation.y) * lerpFactor;
 
     sphere.rotation.x +=
-      (targetRotationX - sphere.rotation.x) * 0.05;
+      (targetRotationX - sphere.rotation.x) * lerpFactor;
+
+    // Rotação automática
+    sphere.rotation.y += delta * 0.25;
+
+    // Flutuação
+    sphere.position.y =
+      Math.sin(elapsedTime * 1.2) * 0.15;
+
+    // Pulsação
+    const scale =
+      1 + Math.sin(elapsedTime * 2) * 0.025;
+
+    sphere.scale.setScalar(scale);
   });
 
   return (
     <mesh ref={sphereRef}>
-      <sphereGeometry args={[1.5, 18, 32]} />
+      <sphereGeometry args={[1.5, 64, 64]} />
 
       <meshStandardMaterial
         color={color}
@@ -43,60 +60,6 @@ function Sphere({ color }: SphereProps) {
       />
     </mesh>
   );
-}
+};
 
-export default function InteractiveSphere() {
-  const [color, setColor] = useState("#3399ff");
-
-  return (
-    <div className="fixed inset-0">
-      {/* Input de cor */}
-      <div className="fixed top-5 left-5 z-50">
-        <label
-          htmlFor="sphere-color"
-          className="flex items-center gap-3 rounded-lg bg-black/50 p-3 backdrop-blur-md"
-        >
-          <span className="text-white">
-            Cor da bola
-          </span>
-
-          <input
-            id="sphere-color"
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className="h-10 w-10 cursor-pointer rounded"
-          />
-        </label>
-      </div>
-
-      <Canvas
-        camera={{
-          position: [0, 0, 5],
-          fov: 50,
-        }}
-        gl={{
-          antialias: true,
-          powerPreference: "high-performance",
-        }}
-      >
-        {/* Luz ambiente */}
-        <ambientLight intensity={0.5} />
-
-        {/* Luz principal */}
-        <directionalLight
-          position={[5, 5, 5]}
-          intensity={2}
-        />
-
-        {/* Luz secundária */}
-        <pointLight
-          position={[-5, -5, -5]}
-          intensity={1}
-        />
-
-        <Sphere color={color} />
-      </Canvas>
-    </div>
-  );
-}
+export default Sphere;
