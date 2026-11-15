@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -22,11 +21,11 @@ export default function DrawingCursor() {
   const [drawingMode, setDrawingMode] = useState(false);
   const [color, setColor] = useState("#ffffff");
   const [brushSize, setBrushSize] = useState(4);
+  const [cursorBackgroundColor, setCursorBackgroundColor] =
+  useState("transparent");
 
-  /*
-   * Refs são usadas dentro dos event listeners
-   * para evitar problemas de estado desatualizado.
-   */
+  const [cursorBorderColor, setCursorBorderColor] =
+  useState("rgb(255, 255, 255)");
   const drawingModeRef = useRef(false);
   const colorRef = useRef("#ffffff");
   const brushSizeRef = useRef(4);
@@ -34,10 +33,12 @@ export default function DrawingCursor() {
 
   const strokesRef = useRef<Stroke[]>([]);
   const currentStrokeRef = useRef<Stroke | null>(null);
+
   const lastPosition = useRef<Point>({
     x: 0,
     y: 0,
   });
+
   useEffect(() => {
     drawingModeRef.current = drawingMode;
   }, [drawingMode]);
@@ -49,6 +50,7 @@ export default function DrawingCursor() {
   useEffect(() => {
     brushSizeRef.current = brushSize;
   }, [brushSize]);
+
   const redrawCanvas = () => {
     const canvas = canvasRef.current;
 
@@ -91,9 +93,6 @@ export default function DrawingCursor() {
     }
   };
 
-  /*
-   * Inicialização do canvas e listeners do mouse.
-   */
   useEffect(() => {
     const canvas = canvasRef.current;
     const cursor = cursorRef.current;
@@ -104,9 +103,6 @@ export default function DrawingCursor() {
 
     if (!ctx) return;
 
-    /*
-     * Configura o canvas.
-     */
     const resizeCanvas = () => {
       const previousWidth = canvas.width;
       const previousHeight = canvas.height;
@@ -114,9 +110,6 @@ export default function DrawingCursor() {
       const newWidth = window.innerWidth;
       const newHeight = window.innerHeight;
 
-      /*
-       * Primeira inicialização.
-       */
       if (
         previousWidth === 0 ||
         previousHeight === 0
@@ -129,44 +122,32 @@ export default function DrawingCursor() {
 
         return;
       }
+
       const scaleX = newWidth / previousWidth;
       const scaleY = newHeight / previousHeight;
+
       for (const stroke of strokesRef.current) {
         for (const point of stroke.points) {
           point.x *= scaleX;
           point.y *= scaleY;
         }
       }
+
       canvas.width = newWidth;
       canvas.height = newHeight;
 
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
 
-      /*
-       * Reconstrói o desenho.
-       */
       redrawCanvas();
     };
 
-    /*
-     * Mouse move.
-     */
     const handleMouseMove = (event: MouseEvent) => {
       const { clientX, clientY } = event;
 
-      /*
-       * Atualiza o cursor personalizado.
-       */
-      cursor.style.transform = `
-        translate(${clientX}px, ${clientY}px)
-        translate(-50%, -50%)
-      `;
+      cursor.style.transform =
+        `translate(${clientX}px, ${clientY}px) translate(-50%, -50%)`;
 
-      /*
-       * Se não estiver desenhando,
-       * não fazemos nada além de mover o cursor.
-       */
       if (
         !drawingModeRef.current ||
         !isMouseDownRef.current
@@ -179,9 +160,6 @@ export default function DrawingCursor() {
 
       if (!currentStroke) return;
 
-      /*
-       * Adiciona o novo ponto ao traço atual.
-       */
       const newPoint = {
         x: clientX,
         y: clientY,
@@ -189,9 +167,6 @@ export default function DrawingCursor() {
 
       currentStroke.points.push(newPoint);
 
-      /*
-       * Desenha somente o novo segmento.
-       */
       ctx.strokeStyle = currentStroke.color;
       ctx.lineWidth = currentStroke.width;
       ctx.lineCap = "round";
@@ -208,27 +183,15 @@ export default function DrawingCursor() {
 
       ctx.stroke();
 
-      /*
-       * Atualiza a última posição.
-       */
       lastPosition.current = {
         x: clientX,
         y: clientY,
       };
     };
 
-    /*
-     * Mouse down.
-     */
     const handleMouseDown = (event: MouseEvent) => {
-      /*
-       * Só desenha se o modo desenho estiver ativo.
-       */
       if (!drawingModeRef.current) return;
 
-      /*
-       * Somente botão esquerdo.
-       */
       if (event.button !== 0) return;
 
       isMouseDownRef.current = true;
@@ -238,32 +201,23 @@ export default function DrawingCursor() {
         y: event.clientY,
       };
 
-      /*
-       * Cria um novo traço.
-       */
       const newStroke: Stroke = {
         points: [startPoint],
         color: colorRef.current,
         width: brushSizeRef.current,
       };
 
-      /*
-       * Guarda o traço.
-       */
       strokesRef.current.push(newStroke);
 
       currentStrokeRef.current = newStroke;
 
-      /*
-       * Guarda a posição inicial.
-       */
       lastPosition.current = startPoint;
 
-      /*
-       * Desenha um pequeno ponto caso o usuário
-       * apenas clique sem arrastar.
-       */
       ctx.fillStyle = colorRef.current;
+
+      // CORREÇÃO:
+      // Define o tamanho do pincel no contexto.
+      ctx.lineWidth = brushSizeRef.current;
 
       ctx.beginPath();
 
@@ -278,17 +232,11 @@ export default function DrawingCursor() {
       ctx.fill();
     };
 
-    /*
-     * Mouse up.
-     */
     const handleMouseUp = () => {
       isMouseDownRef.current = false;
       currentStrokeRef.current = null;
     };
 
-    /*
-     * Caso o mouse saia da janela.
-     */
     const handleMouseLeave = () => {
       isMouseDownRef.current = false;
       currentStrokeRef.current = null;
@@ -321,9 +269,6 @@ export default function DrawingCursor() {
       handleMouseLeave
     );
 
-    /*
-     * Cleanup.
-     */
     return () => {
       window.removeEventListener(
         "mousemove",
@@ -352,9 +297,6 @@ export default function DrawingCursor() {
     };
   }, []);
 
-  /*
-   * Limpa todo o desenho.
-   */
   const clearDrawing = () => {
     const canvas = canvasRef.current;
 
@@ -371,46 +313,35 @@ export default function DrawingCursor() {
       canvas.height
     );
 
-    /*
-     * Remove os traços armazenados.
-     */
     strokesRef.current = [];
-
     currentStrokeRef.current = null;
   };
 
-  /*
-   * Ativa o modo desenho.
-   */
-  const startDrawing = () => {
-    drawingModeRef.current = true;
-    setDrawingMode(true);
-  };
+const startDrawing = () => {
+  drawingModeRef.current = true;
 
-  /*
-   * Desativa o modo desenho.
-   */
-  const stopDrawing = () => {
-    drawingModeRef.current = false;
-    isMouseDownRef.current = false;
-    currentStrokeRef.current = null;
+  setCursorBackgroundColor(color);
+  setCursorBorderColor("rgb(255, 255, 255)");
 
-    setDrawingMode(false);
-  };
+  setDrawingMode(true);
+};
+
+const stopDrawing = () => {
+  drawingModeRef.current = false;
+  isMouseDownRef.current = false;
+  currentStrokeRef.current = null;
+
+  setCursorBackgroundColor("transparent");
+  setCursorBorderColor("rgb(255, 255, 255)");
+
+  setDrawingMode(false);
+};
 
   return (
     <>
-      {/* =========================================
-          ESFERA 3D
-      ========================================= */}
-
-      <div className="fixed inset-0 z-[1]">
+      <div className="fixed inset-0 z-1">
         <InteractiveSphere />
       </div>
-
-      {/* =========================================
-          CANVAS
-      ========================================= */}
 
       <canvas
         ref={canvasRef}
@@ -418,56 +349,27 @@ export default function DrawingCursor() {
           pointer-events-none
           fixed
           inset-0
-          z-[9998]
+          z-9998
         "
       />
 
-      {/* =========================================
-          CURSOR PERSONALIZADO
-      ========================================= */}
-
-      <div
-        ref={cursorRef}
-        className="
-          pointer-events-none
-          fixed
-          z-[9999]
-          rounded-full
-          border-2
-          transition-[width,height,background-color,border-color]
-          duration-100
-        "
-        style={{
-          width: `${brushSize + 8}px`,
-          height: `${brushSize + 8}px`,
-          backgroundColor: drawingMode
-            ? color
-            : "transparent",
-          borderColor: color,
-        }}
-      />
-
-      {/* =========================================
-          PAINEL
-      ========================================= */}
-
-      <div
-        className="
-          fixed
-          bottom-5
-          left-5
-          z-[10000]
-          flex
-          items-center
-          gap-2
-          rounded-xl
-          bg-black/70
-          p-3
-          backdrop-blur-md
-        "
-      >
-        {/* Desenhar */}
-
+<div
+  ref={cursorRef}
+  data-testid="drawing-cursor"
+  className="
+    pointer-events-none
+    fixed
+    z-[9999]
+    rounded-full
+    border-2
+  "
+  style={{
+    width: `${brushSize + 8}px`,
+    height: `${brushSize + 8}px`,
+    backgroundColor: cursorBackgroundColor,
+    borderColor: cursorBorderColor,
+  }}
+/>
         <button
           onClick={startDrawing}
           className="
@@ -483,8 +385,6 @@ export default function DrawingCursor() {
           ✏️ Desenhar
         </button>
 
-        {/* Parar */}
-
         <button
           onClick={stopDrawing}
           className="
@@ -499,8 +399,6 @@ export default function DrawingCursor() {
         >
           Parar
         </button>
-
-        {/* Cor */}
 
         <input
           type="color"
@@ -518,8 +416,6 @@ export default function DrawingCursor() {
           "
         />
 
-        {/* Tamanho do pincel */}
-
         <input
           type="range"
           min="1"
@@ -532,8 +428,6 @@ export default function DrawingCursor() {
           }
           className="w-24"
         />
-
-        {/* Limpar */}
 
         <button
           onClick={clearDrawing}
@@ -549,7 +443,6 @@ export default function DrawingCursor() {
         >
           Limpar
         </button>
-      </div>
     </>
   );
 }
