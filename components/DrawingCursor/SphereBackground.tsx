@@ -1,6 +1,6 @@
 
 import { Canvas } from "@react-three/fiber";
-import Sphere from "@/app/pages/animations/BallHome";
+import Sphere from "@/animations/BallHome";
 
 export default function SphereBackground() {
   return (

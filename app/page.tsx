@@ -3,12 +3,12 @@
 
 import { useRef, useState } from "react";
 
-import DrawingCanvas from "./components/DrawingCursor/Drawing";
-import DrawingToolbar from "./components/DrawingCursor/DrawingToolBar";
-import CustomCursor from "./components/DrawingCursor/CustomCursor";
-import SphereBackground from "./components/DrawingCursor/SphereBackground";
+import DrawingCanvas from "../components/DrawingCursor/Drawing";
+import DrawingToolbar from "../components/DrawingCursor/DrawingToolBar";
+import CustomCursor from "../components/DrawingCursor/CustomCursor";
+import SphereBackground from "../components/DrawingCursor/SphereBackground";
 
-import { useDrawingCanvas } from "./types/hooks/useDrawing";
+import { useDrawingCanvas } from "../types/hooks/useDrawing";
 
 export default function DrawingCursor() {
   // Referências
